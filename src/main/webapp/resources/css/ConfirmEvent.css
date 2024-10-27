@@ -1,0 +1,8 @@
+@CHARSET "ISO-8859-1";
+
+
+.NucImg {
+  width: 150px;
+  height: 40px;
+  object-fit: contain;
+}

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+	http://www.springframework.org/schema/security
+    http://www.springframework.org/schema/security/spring-security-3.1.xsd
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+
+	<beans:import resource="dispatch-servlet.xml" />
+
+	<http auto-config="true" create-session="always">
+
+		<intercept-url pattern="/login" access="IS_AUTHENTICATED_ANONYMOUSLY" />
+		<intercept-url pattern="/loginFailed" access="IS_AUTHENTICATED_ANONYMOUSLY" />
+		<intercept-url pattern="/logoutSuccess" access="IS_AUTHENTICATED_ANONYMOUSLY" />
+		<intercept-url pattern="/NoAccess" access="ROLE_ADMIN,ROLE_USER,ROLE_SPEAKER" />
+		<intercept-url pattern="/*" access="ROLE_ADMIN,ROLE_USER,ROLE_SPEAKER" />
+
+		<logout logout-success-url="/logoutSuccess" delete-cookies="JSESSIONID"
+			invalidate-session="true" />
+
+		<access-denied-handler error-page="/noAccess" />
+
+		<session-management invalid-session-url="/invalidSession"
+			session-fixation-protection="newSession"
+			session-authentication-error-url="/login">
+			<!-- <concurrency-control max-sessions="2" error-if-maximum-exceeded="true" 
+				expired-url="/expiredSession"/> -->
+		</session-management>
+
+		<form-login login-page="/login" authentication-failure-url="/loginFailed"
+			default-target-url="/loginSuccess" always-use-default-target="true" />
+
+		<remember-me key="jsfspring-sec" services-ref="rememberMeServices" />
+
+	</http>
+
+	<beans:bean id="passwordEncoder"
+		class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
+
+	<authentication-manager alias="authenticationManager">
+		<authentication-provider ref="rememberMeAuthenticationProvider" />
+		<authentication-provider>
+			<password-encoder ref="passwordEncoder" />
+			<jdbc-user-service id="userDetailsService"
+				data-source-ref="ds"
+				users-by-username-query="select USERNAME, PASSWORD, enabled from karizma_spring where USERNAME=?"
+				authorities-by-username-query="select karizma_spring.username, karizma_spring_role.roll_name as authority from karizma_spring join karizma_spring_role on karizma_spring.ROLES_ROLE_ID=karizma_spring_role.ROLE_ID where karizma_spring.username=?" />
+		</authentication-provider>
+	</authentication-manager>
+
+	<global-method-security secured-annotations="enabled" />
+
+	<beans:bean id="rememberMeServices"
+		class="org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices">
+		<beans:constructor-arg value="jsfspring-sec" />
+		<beans:constructor-arg ref="userDetailsService" />
+
+		<beans:property name="alwaysRemember" value="true" />
+		<beans:property name="tokenValiditySeconds" value="600" />
+		<beans:property name="parameter" value="remember-me" />
+	</beans:bean>
+
+	<beans:bean id="rememberMeAuthenticationProvider"
+		class="org.springframework.security.authentication.RememberMeAuthenticationProvider">
+		<beans:constructor-arg value="jsfspring-sec" />
+	</beans:bean>
+
+	<beans:bean id="rememberMeFilter"
+		class="org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter">
+		<beans:constructor-arg ref="authenticationManager" />
+		<beans:constructor-arg ref="rememberMeServices" />
+	</beans:bean>
+
+</beans:beans>
+
+
